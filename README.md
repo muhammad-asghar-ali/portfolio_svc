@@ -8,8 +8,9 @@ The Portfolio Backend service is responsible for handling all the requests made 
 `go run cmd/main/main.go`
 Navigatge to `localhost:8080/ping`
 
-Repository Layout is based on golang community recomneded best practices. More on it [here](ghttps://github.com/golang-standards/project-layout) 
+Repository Layout is based on golang community recomneded best practices. More on it [here](https://github.com/golang-standards/project-layout) 
 
-Libraries 
+## Libraries 
+
 - gin is a highly scalable, light weight http server. 
 - gorm to connect to a relational database 
