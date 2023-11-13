@@ -5,9 +5,13 @@ This repositry is a written in Golang
 The Portfolio Backend service is responsible for handling all the requests made by **portfolio_ui** service. 
 
 ## How to Run
-`go run cmd/main/main.go`
+1. Copy all the contents from `example.env` into a new file `staging.env`  and replace all *XXXX* with the correct values. 
+> Donot commit **staging.env** file
+2. Run `go run cmd/main/main.go` from the root directory
 
 Navigatge to `localhost:5050/healthy` for health check of the server
+
+## Directory Structure
 
 Repository Layout is based on golang community recomneded best practices. More on it [here](https://github.com/golang-standards/project-layout) 
 
