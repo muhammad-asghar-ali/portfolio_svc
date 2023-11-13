@@ -5,8 +5,8 @@ import (
 	"net/http"
 )
 
-func TestController(c *gin.Context) {
+func HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Test API Request Successfull",
+		"message": "Server is live and accepting connections",
 	})
 }
