@@ -21,5 +21,5 @@ Repository Layout is based on golang community recomneded best practices. More o
 - gorm to connect to a relational database 
 
 ## Adding a new ENV variable
-1. add it to app.env
+1. add it to example.env
 1. add the varaible to struct in `configs/env-config.go`
