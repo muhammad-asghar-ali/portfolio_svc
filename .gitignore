@@ -21,5 +21,5 @@
 go.work
 
 # Environment Variable
-staging.env
+app.env
 

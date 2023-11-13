@@ -21,7 +21,7 @@ func loadEnvVariables() (config *envConfigs, err error) {
 	viper.AddConfigPath(".")
 
 	// Tell viper the name of your file
-	viper.SetConfigName("staging")
+	viper.SetConfigName("app")
 
 	// Tell viper the type of your file
 	viper.SetConfigType("env")
