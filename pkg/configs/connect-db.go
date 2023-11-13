@@ -23,7 +23,7 @@ func GetDB() *gorm.DB {
 	if err != nil {
 		log.Fatalf("Error getting generic database object: %v", err)
 	}
-	defer sqlDB.Close()
+	// defer sqlDB.Close()
 	// Ping the database to check for connection
 	err = sqlDB.Ping()
 	if err != nil {

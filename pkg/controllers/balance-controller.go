@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	// "encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/oxbase/portfolio_svc/pkg/models"
 	"gorm.io/gorm"
@@ -8,8 +9,10 @@ import (
 )
 
 func TestController(c *gin.Context, db *gorm.DB) {
-	models.GetAllUsers(db)
+	users := models.GetAllUsers(db)
+	// res, _ := json.Marshal(users)
+
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Test API Request Successfull",
+		"message": users,
 	})
 }
