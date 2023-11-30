@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/oxbase/portfolio_svc/pkg/configs"
-	"github.com/oxbase/portfolio_svc/pkg/routes"
 	"log"
+
+	"github.com/0xbase-Corp/portfolio_svc/pkg/configs"
+	"github.com/0xbase-Corp/portfolio_svc/pkg/routes"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
