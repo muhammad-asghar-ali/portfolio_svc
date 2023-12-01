@@ -16,6 +16,12 @@ func main() {
 	db := configs.GetDB()
 
 	r := gin.Default()
+	//gin warning: "you trusted all proxies this is not safe. we recommend you to set a value"
+	r.ForwardedByClientIP = true
+	if err := r.SetTrustedProxies(nil); err != nil {
+		log.Fatal("Failed to setup trusted Proxies")
+	}
+
 	routes.PortfolioRoutes(r, db)
 
 	if err := r.Run(configs.EnvConfigs.Port); err != nil {
