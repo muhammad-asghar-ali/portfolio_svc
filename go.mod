@@ -1,4 +1,4 @@
-module github.com/0xbase-Corp/portfolio_svc
+module github.com/oxbase/portfolio_svc
 
 go 1.20
 
