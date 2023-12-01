@@ -2,16 +2,18 @@ package configs
 
 import (
 	"fmt"
+	"log"
+	"os"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"log"
 )
 
 func GetDB() *gorm.DB {
 
 	// Database connection string
 	// Note: Replace with your database details
-	dsn := "host=localhost user=postgres password=postgres dbname=sales_db port=5432 sslmode=disable TimeZone=Asia/Shanghai"
+	dsn := os.Getenv("DATABASE_URL")
 
 	// Open the connection to the database
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
