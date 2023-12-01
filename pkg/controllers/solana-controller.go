@@ -1,26 +1,21 @@
 package controllers
 
 import (
-	// "encoding/json"
 	"encoding/json"
 	"io"
 	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/oxbase/portfolio_svc/pkg/models"
 	"gorm.io/gorm"
 )
-
-type SolanaTotalBalance struct {
-	Lamports string `json:"lamports"`
-	Solana   string `json:"solana"`
-}
 
 func SolanaController(c *gin.Context, db *gorm.DB) {
 	solAddress := c.Param("sol-address")
 	moralisAccessKey := c.GetHeader("x-api-key")
 
-	url := "https://solana-gateway.moralis.io/account/mainnet/" + solAddress + "/balance"
+	url := "https://solana-gateway.moralis.io/account/mainnet/" + solAddress + "/portfolio"
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Fatal(err)
@@ -43,7 +38,7 @@ func SolanaController(c *gin.Context, db *gorm.DB) {
 		log.Fatal(err)
 	}
 
-	var solResponse SolanaTotalBalance
+	var solResponse models.SolanaPortfolio
 	if err := json.Unmarshal(body, &solResponse); err != nil {
 		log.Fatal(err)
 	}
