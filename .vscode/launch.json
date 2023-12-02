@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "0xbase",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${fileDirname}",
+      "args": ["arg1", "arg2"],
+      "env": { "MY_ENV_VAR": "some_value" },
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
