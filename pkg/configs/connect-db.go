@@ -9,12 +9,15 @@ import (
 )
 
 func GetDB() *gorm.DB {
+	// Get the environment variables
+	InitEnvConfigs()
 
 	// Database connection string
-	// Note: Replace with your database details
-	dsn := "host=localhost user=postgres password=postgres dbname=sales_db port=5432 sslmode=disable TimeZone=Asia/Shanghai"
+
+	dsn := EnvConfigVars.DatabaseUrl
 
 	// Open the connection to the database
+
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Error connecting to database: %v", err)
