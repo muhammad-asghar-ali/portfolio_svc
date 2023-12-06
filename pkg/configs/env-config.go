@@ -6,19 +6,21 @@ import (
 	"github.com/spf13/viper"
 )
 
-var EnvConfigVars *EnvConfigs
-
-func InitEnvConfigs() {
-	EnvConfigVars, _ = loadEnvVariables()
-}
-
 type EnvConfigs struct {
 	Port        string `mapstructure:"PORT"`
 	DbPassword  string `mapstructure:"DB_PASSWORD"`
 	DatabaseUrl string `mapstructure:"DATABASE_URL"`
 }
 
-// rest of the code remains the same
+var EnvConfigVars *EnvConfigs
+
+func InitEnvConfigs() {
+	var err error
+	EnvConfigVars, err = loadEnvVariables()
+	if err != nil {
+		log.Fatalf("Failed to load environment variables: %v", err)
+	}
+}
 
 func loadEnvVariables() (config *EnvConfigs, err error) {
 	// Tell viper the path/location of your env file. If it is root just add "."
@@ -41,5 +43,5 @@ func loadEnvVariables() (config *EnvConfigs, err error) {
 	if err := viper.Unmarshal(&config); err != nil {
 		log.Fatal(err)
 	}
-	return
+	return config, nil
 }
