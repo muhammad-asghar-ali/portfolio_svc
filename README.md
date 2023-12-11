@@ -23,3 +23,10 @@ Repository Layout is based on golang community recomneded best practices. More o
 ## Adding a new ENV variable
 1. add it to example.env
 1. add the varaible to struct in `configs/env-config.go`
+
+
+## To Update Swagger 
+``` 
+swag init -g cmd/0xbase/main.go -o cmd/docs
+```
+Once the server is up, the swagger UI will be available at http://localhost:5050/swagger/index.html

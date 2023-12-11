@@ -6,11 +6,22 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/0xbase-Corp/portfolio_svc/pkg/models"
 	"github.com/gin-gonic/gin"
-	"github.com/oxbase/portfolio_svc/pkg/models"
 	"gorm.io/gorm"
 )
 
+// @BasePath /api/v1
+
+// PingExample godoc
+// @Summary ping example
+// @Schemes models.SolanaPortfolio
+// @Description do ping
+// @Tags example
+// @Accept json
+// @Produce json
+// @Success 200 {string} Helloworld
+// @Router /solana/portfolio/:sol-address [get]
 func SolanaController(c *gin.Context, db *gorm.DB) {
 	solAddress := c.Param("sol-address")
 	moralisAccessKey := c.GetHeader("x-api-key")
