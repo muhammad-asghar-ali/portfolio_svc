@@ -1,0 +1,36 @@
+version: '3.1'
+services:
+  postgres:
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: portfolio
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - 5432:5432
+    networks:
+      - xbase 
+  
+  portfolio_svc:
+    build: ./
+    restart: always
+    depends_on:
+      - postgres
+    volumes:
+     - db_data:/var/lib/mysql
+    ports:
+      - "5050:5050"
+    networks:
+      - xbase
+
+  
+networks:
+  xbase:
+    driver: bridge
+
+volumes:
+  db_data:
