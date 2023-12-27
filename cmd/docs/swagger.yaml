@@ -43,7 +43,22 @@ paths:
       summary: ping example
       tags:
       - example
-  /solana/portfolio/:sol-address:
+  /portfolio/btc/:btc-address:
+    get:
+      consumes:
+      - application/json
+      description: do ping
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: ping example
+      tags:
+      - example
+  /portfolio/solana/:sol-address:
     get:
       consumes:
       - application/json
