@@ -54,25 +54,35 @@ func Migrate(db *gorm.DB) error {
 	})
 
 	// Create a table to track which migrations have been run
-	db.Exec("CREATE TABLE IF NOT EXISTS migrations (name VARCHAR PRIMARY KEY)")
+	err = db.Exec("CREATE TABLE IF NOT EXISTS migrations (name VARCHAR PRIMARY KEY)").Error
+	if err != nil {
+		return err
+	}
 
 	// Execute each migration file in sorted order
 	for _, file := range migrationFiles {
-		log.Printf("Checking migration file: %s", file)
+		fileName := filepath.Base(file)
+		log.Printf("Checking migration file: %s", fileName)
 		var count int64
-		db.Table("migrations").Where("name = ?", file).Count(&count)
+		db.Table("migrations").Where("name = ?", fileName).Count(&count)
 		if count > 0 {
-			log.Printf("Migration %s has already been applied, skipping", file)
+			log.Printf("Migration %s has already been applied, skipping", fileName)
 			continue
 		}
 		content, err := os.ReadFile(file)
 		if err != nil {
 			return err
 		}
-		if err := db.Exec(string(content)).Error; err != nil {
+		tx := db.Begin()
+		if err := tx.Exec(string(content)).Error; err != nil {
+			tx.Rollback()
 			return err
 		}
-		db.Exec("INSERT INTO migrations (name) VALUES (?)", file)
+		if err := tx.Exec("INSERT INTO migrations (name) VALUES (?)", fileName).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+		tx.Commit()
 	}
 
 	return nil
