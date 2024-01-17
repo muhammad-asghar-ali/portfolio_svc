@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS token_prices (
     exchange_address VARCHAR(255),
     native_price_value BIGINT,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (token_mint) REFERENCES tokens(mint)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Add an index on token_mint for faster searches
+CREATE INDEX IF NOT EXISTS idx_token_mint ON token_prices(token_mint);
