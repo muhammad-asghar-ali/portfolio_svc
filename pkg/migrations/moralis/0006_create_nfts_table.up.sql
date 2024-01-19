@@ -5,6 +5,8 @@ CREATE TABLE IF NOT EXISTS nfts (
     mint VARCHAR(255),
     amount_raw BIGINT,
     decimals INTEGER,
+    name VARCHAR(255), -- New column for NFT name
+    symbol VARCHAR(50), -- New column for NFT symbol
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (solana_asset_id) REFERENCES solana_assets_moralis_v1(solana_asset_id)
