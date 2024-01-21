@@ -3,9 +3,9 @@ CREATE TABLE IF NOT EXISTS tokens (
     solana_asset_id INTEGER NOT NULL,
     associated_token_address VARCHAR(255),
     mint VARCHAR(255) UNIQUE,
-    amount_raw BIGINT,
-    amount DECIMAL,
-    decimals INTEGER,
+    amount_raw VARCHAR(255),
+    amount VARCHAR(255),
+    decimals VARCHAR(255),
     name VARCHAR(255), -- New column for token name
     symbol VARCHAR(50), -- New column for token symbol
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

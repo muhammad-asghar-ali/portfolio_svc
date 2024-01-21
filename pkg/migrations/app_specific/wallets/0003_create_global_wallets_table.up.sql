@@ -5,6 +5,5 @@ CREATE TABLE IF NOT EXISTS global_wallets (
     blockchain_type VARCHAR(255) NOT NULL,
     api_endpoint TEXT,
     api_version VARCHAR(50),
-    last_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (portfolio_id) REFERENCES pseudonymous_portfolios(portfolio_id)
+    last_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

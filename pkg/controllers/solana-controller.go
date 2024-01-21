@@ -53,8 +53,8 @@ func SolanaController(c *gin.Context, db *gorm.DB) {
 		Tokens        []models.Token `json:"tokens"`
 		NFTs          []models.NFT   `json:"nfts"`
 		NativeBalance struct {
-			Lamports int64   `json:"lamports"`
-			Solana   float64 `json:"solana"`
+			Lamports string `json:"lamports"`
+			Solana   string `json:"solana"`
 		} `json:"nativeBalance"`
 	}
 
@@ -90,9 +90,9 @@ func SolanaController(c *gin.Context, db *gorm.DB) {
 	solanaAsset := models.SolanaAssetsMoralisV1{
 		WalletID:         wallet.WalletID,
 		Lamports:         response.NativeBalance.Lamports,
-		Sol:              response.NativeBalance.Solana,
+		Solana:           response.NativeBalance.Solana,
 		TotalTokensCount: len(response.Tokens),
-		TotalNFTsCount:   len(response.NFTs),
+		TotalNftsCount:   len(response.NFTs),
 		LastUpdatedAt:    time.Now(),
 	}
 
@@ -138,13 +138,14 @@ func SolanaController(c *gin.Context, db *gorm.DB) {
 
 // updateOrCreateSolanaAsset updates an existing SolanaAssetsMoralisV1 record or creates a new one.
 func updateOrCreateSolanaAsset(tx *gorm.DB, asset *models.SolanaAssetsMoralisV1) error {
-	// Check if the asset record already exists for the given WalletID.
+	// Check if the asset record already exists for the given SolanaAssetID.
 	var existingAsset models.SolanaAssetsMoralisV1
-	result := tx.Where("wallet_id = ?", asset.WalletID).First(&existingAsset)
+	result := tx.Where("solana_asset_id = ?", asset.SolanaAssetID).First(&existingAsset)
 
 	// If the record does not exist, create a new one.
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
+			asset.SolanaAssetID = 0 // Reset the solana_asset_id before creating a new record
 			return tx.Create(asset).Error
 		}
 		// Return any other error encountered during the query.
