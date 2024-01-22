@@ -2,8 +2,7 @@ name: Go
 
 on:
   push:
-    branches-ignore:
-      - 'main'
+    branches: ["main"]
   pull_request:
     branches-ignore:
       - 'main'
