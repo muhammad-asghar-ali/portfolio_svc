@@ -105,20 +105,10 @@ func SolanaController(c *gin.Context, db *gorm.DB) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save Solana assets: " + err.Error()})
 		return
 	}
-
-	// Assign the SolanaAssetID to each Token and NFT.
-	// This ensures that the foreign key relationship is correctly set.
-	for i := range response.Tokens {
-		response.Tokens[i].SolanaAssetID = solanaAsset.SolanaAssetID
-	}
-
-	for i := range response.NFTs {
-		response.NFTs[i].SolanaAssetID = solanaAsset.SolanaAssetID
-	}
 	log.Println("Attempting to save data to the database")
 	// Save the Solana asset data along with the associated tokens and NFTs.
 	// The SaveSolanaData function will handle the creation of all these records.
-	if err := models.SaveSolanaData(tx, solanaAsset, response.Tokens, response.NFTs); err != nil {
+	if err := models.SaveSolanaData(tx, &solanaAsset, response.Tokens, response.NFTs); err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save data to the database: " + err.Error()})
 		return
@@ -145,8 +135,19 @@ func updateOrCreateSolanaAsset(tx *gorm.DB, asset *models.SolanaAssetsMoralisV1)
 	// If the record does not exist, create a new one.
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			asset.SolanaAssetID = 0 // Reset the solana_asset_id before creating a new record
-			return tx.Create(asset).Error
+			// Create a new record without specifying SolanaAssetID.
+			newAsset := models.SolanaAssetsMoralisV1{
+				WalletID:         asset.WalletID,
+				Lamports:         asset.Lamports,
+				Solana:           asset.Solana,
+				TotalTokensCount: asset.TotalTokensCount,
+				TotalNftsCount:   asset.TotalNftsCount,
+				LastUpdatedAt:    asset.LastUpdatedAt,
+			}
+			if err := tx.Create(&newAsset).Error; err != nil {
+				return err
+			}
+			return nil
 		}
 		// Return any other error encountered during the query.
 		return result.Error

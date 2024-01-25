@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS tokens (
     token_id SERIAL PRIMARY KEY,
     solana_asset_id INTEGER NOT NULL,
     associated_token_address VARCHAR(255),
-    mint VARCHAR(255) UNIQUE,
+    mint VARCHAR(255) UNIQUE, 
     amount_raw VARCHAR(255),
     amount VARCHAR(255),
     decimals VARCHAR(255),

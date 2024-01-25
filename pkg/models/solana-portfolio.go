@@ -22,7 +22,7 @@ type Token struct {
 	TokenID                int       `gorm:"primary_key"`
 	SolanaAssetID          int       `gorm:"not null"`
 	AssociatedTokenAddress string    `gorm:"type:varchar(255)"`
-	Mint                   string    `gorm:"type:varchar(255);unique"`
+	Mint                   string    `gorm:"type:varchar(255):unique"`
 	AmountRaw              string    `gorm:"type:varchar(255)"`
 	Amount                 string    `gorm:"type:varchar(255)"`
 	Decimals               string    `gorm:"type:varchar(255)"`
@@ -46,22 +46,23 @@ type NFT struct {
 	CreatedAt              time.Time `gorm:"default:CURRENT_TIMESTAMP"`
 }
 
-func SaveSolanaData(tx *gorm.DB, solanaAsset SolanaAssetsMoralisV1, tokens []Token, nfts []NFT) error {
-	// Set the counts before saving the asset
-	solanaAsset.TotalTokensCount = len(tokens)
-	solanaAsset.TotalNftsCount = len(nfts)
-
-	// Save the Solana asset data
-	if result := tx.Create(&solanaAsset); result.Error != nil {
+// SaveSolanaData saves a SolanaAssetsMoralisV1 record along with its associated tokens and NFTs.
+func SaveSolanaData(tx *gorm.DB, solanaAsset *SolanaAssetsMoralisV1, tokens []Token, nfts []NFT) error {
+	// Save the SolanaAssetsMoralisV1 record.
+	if result := tx.Create(solanaAsset); result.Error != nil {
 		return result.Error
 	}
 
-	// Retrieve the auto-generated SolanaAssetID
-	solanaAssetID := solanaAsset.SolanaAssetID
+	// Set SolanaAssetID for each Token and NFT.
+	for i := range tokens {
+		tokens[i].SolanaAssetID = int(solanaAsset.SolanaAssetID)
+	}
+	for i := range nfts {
+		nfts[i].SolanaAssetID = int(solanaAsset.SolanaAssetID)
+	}
 
-	// Save each token
+	// Save each Token
 	for _, token := range tokens {
-		token.SolanaAssetID = int(solanaAssetID) // Use the auto-generated SolanaAssetID
 		if result := tx.Create(&token); result.Error != nil {
 			return result.Error
 		}
@@ -69,7 +70,6 @@ func SaveSolanaData(tx *gorm.DB, solanaAsset SolanaAssetsMoralisV1, tokens []Tok
 
 	// Save each NFT
 	for _, nft := range nfts {
-		nft.SolanaAssetID = int(solanaAssetID) // Use the auto-generated SolanaAssetID
 		if result := tx.Create(&nft); result.Error != nil {
 			return result.Error
 		}
