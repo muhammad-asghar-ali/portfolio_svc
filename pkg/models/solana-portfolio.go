@@ -22,7 +22,7 @@ type Token struct {
 	TokenID                int       `gorm:"primary_key"`
 	SolanaAssetID          int       `gorm:"not null"`
 	AssociatedTokenAddress string    `gorm:"type:varchar(255)"`
-	Mint                   string    `gorm:"type:varchar(255):unique"`
+	Mint                   string    `gorm:"type:varchar(255):"`
 	AmountRaw              string    `gorm:"type:varchar(255)"`
 	Amount                 string    `gorm:"type:varchar(255)"`
 	Decimals               string    `gorm:"type:varchar(255)"`
