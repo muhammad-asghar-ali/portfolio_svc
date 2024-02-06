@@ -7,14 +7,16 @@ import (
 	"gorm.io/gorm"
 )
 
-type User struct {
-	UserId           uint      `gorm:"primaryKey"` // GORM automatically uses fields with name 'ID' as the primary key
-	Username         string    `gorm:"size:255;not null"`
-	Email            string    `gorm:"size:255;unique;not null"`
-	HashedPublicKey  string    `gorm:"type:text"`
-	OtherUserDetails string    `gorm:"type:text"`
-	SignupDate       time.Time `gorm:"default:CURRENT_TIMESTAMP"`
-}
+type (
+	User struct {
+		UserId           uint      `gorm:"primaryKey"` // GORM automatically uses fields with name 'ID' as the primary key
+		Username         string    `gorm:"size:255;not null"`
+		Email            string    `gorm:"size:255;unique;not null"`
+		HashedPublicKey  string    `gorm:"type:text"`
+		OtherUserDetails string    `gorm:"type:text"`
+		SignupDate       time.Time `gorm:"default:CURRENT_TIMESTAMP"`
+	}
+)
 
 func GetAllUsers(db *gorm.DB) []User {
 
