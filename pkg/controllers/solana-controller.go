@@ -13,7 +13,10 @@ import (
 )
 
 // SolanaController handles requests for Solana portfolio information.
+// SolanaController handles requests for Solana portfolio information.
 func SolanaController(c *gin.Context, db *gorm.DB) {
+	log.Println("SolanaController invoked")
+	// Extract the Solana address from the request parameter.
 	log.Println("SolanaController invoked")
 	// Extract the Solana address from the request parameter.
 	solAddress := c.Param("sol-address")
@@ -23,25 +26,33 @@ func SolanaController(c *gin.Context, db *gorm.DB) {
 	moralisAccessKey := c.GetHeader("x-api-key")
 
 	// Prepare the Moralis API request URL.
+	// Prepare the Moralis API request URL.
 	url := "https://solana-gateway.moralis.io/account/mainnet/" + solAddress + "/portfolio"
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	// Add the Moralis API key to the request header.
+	// Add the Moralis API key to the request header.
 	req.Header.Add("x-api-key", moralisAccessKey)
 
+	// Create an HTTP client and execute the request.
 	// Create an HTTP client and execute the request.
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 	defer resp.Body.Close()
 
+	// Read the response body.
 	// Read the response body.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
