@@ -5,6 +5,7 @@ import (
 
 	docs "github.com/0xbase-Corp/portfolio_svc/cmd/docs"
 	"github.com/0xbase-Corp/portfolio_svc/pkg/configs"
+	"github.com/0xbase-Corp/portfolio_svc/pkg/middlewares"
 	"github.com/0xbase-Corp/portfolio_svc/pkg/migrations"
 	"github.com/0xbase-Corp/portfolio_svc/pkg/routes"
 	"github.com/gin-gonic/gin"
@@ -43,6 +44,11 @@ func main() {
 
 	r := gin.Default()
 	docs.SwaggerInfo.BasePath = "/api/v1"
+
+	// middleware
+	r.Use(
+		middlewares.ErrorHandler(),
+	)
 
 	//gin warning: "you trusted all proxies this is not safe. we recommend you to set a value"
 	r.ForwardedByClientIP = true

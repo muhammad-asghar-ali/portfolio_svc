@@ -10,6 +10,8 @@ import (
 	"github.com/0xbase-Corp/portfolio_svc/pkg/models"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+
+	errors "github.com/0xbase-Corp/portfolio_svc/pkg/shared"
 )
 
 //	@BasePath	/api/v1
@@ -31,7 +33,8 @@ func BitcoinController(c *gin.Context, db *gorm.DB) {
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		log.Fatal(err)
+		errors.HandleHttpError(c, errors.NewBadRequestError(ErrUnableToHitUrl))
+		return
 	}
 	//send the request
 	client := &http.Client{}
@@ -39,7 +42,8 @@ func BitcoinController(c *gin.Context, db *gorm.DB) {
 	resp, err := client.Do(req)
 
 	if err != nil {
-		log.Fatal(err)
+		errors.HandleHttpError(c, errors.NewBadRequestError(ErrInResponse))
+		return
 	}
 	defer resp.Body.Close()
 
@@ -50,7 +54,8 @@ func BitcoinController(c *gin.Context, db *gorm.DB) {
 	fmt.Println("body ", body)
 	var btcResponse models.BtcChainAPI
 	if err := json.Unmarshal(body, &btcResponse); err != nil {
-		log.Fatal(err)
+		errors.HandleHttpError(c, errors.NewBadRequestError(ErrInUnmarshalData))
+		return
 	}
 
 	fmt.Println("BTC PResponse ", btcResponse)
