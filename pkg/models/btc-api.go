@@ -1,23 +1,27 @@
 package models
 
-type BtcChainAPI struct {
-	Data    ChainData `json:"data"`
-	ErrCode int16     `json:"error_code"`
-	ErrNo   int16     `json:"err_no"`
-	Message string    `json:"message"`
-	Status  string    `json:"status"`
-}
+import (
+	"time"
+)
 
-type ChainData struct {
-	Address             string `json:"address"`
-	Received            int32  `json:"received"`
-	Sent                int32  `json:"sent"`
-	Balance             int32  `json:"balance"`
-	TxCount             int16  `json:"tx_count"`             //max value 32768
-	UnconfirmedTxCount  int16  `json:"unconformed_tx_count"` //max value 32768
-	UnconfirmedReceived int32  `json:"unconfirmed_received"`
-	UnconfirmedSent     int32  `json:"unconfirmed_sent"`
-	UnspentTxCount      int32  `json:"unspend_tx_count"`
-	FirstTx             string `json:"first_tx"`
-	LastTx              string `json:"last_tx"`
+type (
+	BitcoinAddressInfo struct {
+		Address             string    `json:"address" gorm:"type:varchar(255);uniqueIndex"`
+		Received            int64     `json:"received" gorm:"type:bigint"`
+		Sent                int64     `json:"sent" gorm:"type:bigint"`
+		Balance             int32     `json:"balance" gorm:"type:int"`
+		TxCount             int16     `json:"tx_count" gorm:"type:smallint"`
+		UnconfirmedTxCount  int16     `json:"unconformed_tx_count" gorm:"type:smallint"`
+		UnconfirmedReceived int32     `json:"unconfirmed_received" gorm:"type:int"`
+		UnconfirmedSent     int32     `json:"unconfirmed_sent" gorm:"type:int"`
+		UnspentTxCount      int32     `json:"unspend_tx_count" gorm:"type:int"`
+		FirstTx             string    `json:"first_tx" gorm:"type:text"`
+		LastTx              string    `json:"last_tx" gorm:"type:text"`
+		CreatedAt           time.Time `json:"created_at" gorm:"autoCreateTime"`
+		UpdatedAt           time.Time `json:"updated_at" gorm:"autoUpdateTime"`
+	}
+)
+
+func (BitcoinAddressInfo) TableName() string {
+	return "bitcoin_address_info"
 }
