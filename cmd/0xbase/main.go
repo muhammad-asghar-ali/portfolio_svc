@@ -54,6 +54,10 @@ func main() {
 	r.Use(middlewares.CORSMiddleware())
 	docs.SwaggerInfo.BasePath = "/api/v1"
 
+	r.Use(
+		middlewares.ErrorHandler(),
+	)
+
 	//gin warning: "you trusted all proxies this is not safe. we recommend you to set a value"
 	r.ForwardedByClientIP = true
 	if err := r.SetTrustedProxies(nil); err != nil {

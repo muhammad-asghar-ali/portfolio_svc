@@ -5,29 +5,31 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/0xbase-Corp/portfolio_svc/internal/models"
+	"github.com/0xbase-Corp/portfolio_svc/internal/types"
+	"github.com/0xbase-Corp/portfolio_svc/shared/errors"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 //	@BasePath	/api/v1
-// SolanaController godoc
 //
-// @Summary      Fetch Solana Portfolio Information
-// @Description  Retrieves portfolio information for a given Solana address using the Moralis API.
+// SolanaController godoc
+// @Summary      Fetch Solana portfolio details for a given Solana address
+// @Description  Fetch Solana portfolio details, including tokens and NFTs, for a specific Solana address.
 // @Tags         solana
 // @Accept       json
 // @Produce      json
-// @Param        sol-address  path      string  true  "Solana Address"
-// @Param        x-api-key    header    string  true  "Moralis API Key"
-// @Success      200          {object}  struct{ Tokens []models.Token; NFTs []models.NFT; NativeBalance struct{ Lamports string; Solana string } "nativeBalance" }  "Returns portfolio information including tokens, NFTs, and native balance"
-// @Failure      400          {object}  struct{ Error string }  "Bad Request"
-// @Failure      500          {object}  struct{ Error string }  "Internal Server Error"
-// @Router       /portfolio/solana/:sol-address [get]
-
-// SolanaController handles requests for Solana portfolio information.
+// @Param        sol-address path string true "Solana Address" Format(string)
+// @Param        x-api-key header string true "Moralis API Key" Format(string)
+// @Success      200 {object} types.OKResponse
+// @Failure      400 {object} errors.APIError
+// @Failure      404 {object} errors.APIError
+// @Failure      500 {object} errors.APIError
+// @Router       /portfolio/solana/{sol-address} [get]
 func SolanaController(c *gin.Context, db *gorm.DB) {
 
 	log.Println("SolanaController invoked")
@@ -42,7 +44,7 @@ func SolanaController(c *gin.Context, db *gorm.DB) {
 	url := "https://solana-gateway.moralis.io/account/mainnet/" + solAddress + "/portfolio"
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		errors.HandleHttpError(c, errors.NewBadRequestError(err.Error()))
 		return
 	}
 
@@ -53,7 +55,7 @@ func SolanaController(c *gin.Context, db *gorm.DB) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		errors.HandleHttpError(c, errors.NewBadRequestError(err.Error()))
 		return
 	}
 	defer resp.Body.Close()
@@ -61,7 +63,7 @@ func SolanaController(c *gin.Context, db *gorm.DB) {
 	// Read the response body.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		errors.HandleHttpError(c, errors.NewBadRequestError(err.Error()))
 		return
 	}
 
@@ -78,7 +80,7 @@ func SolanaController(c *gin.Context, db *gorm.DB) {
 	// Parse the JSON response into the defined struct.
 	if err := json.Unmarshal(body, &response); err != nil {
 		log.Println("Error parsing JSON response:", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse JSON response: " + err.Error()})
+		errors.HandleHttpError(c, errors.NewBadRequestError("Failed to parse JSON response: "+err.Error()))
 		return
 	}
 	log.Println("Received response from Moralis API")
@@ -94,11 +96,11 @@ func SolanaController(c *gin.Context, db *gorm.DB) {
 				BlockchainType: "Solana",
 			}
 			if err := db.Create(&wallet).Error; err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create wallet: " + err.Error()})
+				errors.HandleHttpError(c, errors.NewBadRequestError("Failed to create wallet: "+err.Error()))
 				return
 			}
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database query error: " + err.Error()})
+			errors.HandleHttpError(c, errors.NewBadRequestError("Database query error: "+err.Error()))
 			return
 		}
 	}
@@ -120,17 +122,89 @@ func SolanaController(c *gin.Context, db *gorm.DB) {
 	if err := models.SaveSolanaData(tx, &solanaAsset, response.Tokens, response.NFTs); err != nil {
 		tx.Rollback()
 		log.Println("Failed to save data to the database:", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save data to the database: " + err.Error()})
+		errors.HandleHttpError(c, errors.NewBadRequestError("Failed to save data to the database: "+err.Error()))
 		return
 	}
 
 	// Commit the transaction if everything is successful.
 	if err := tx.Commit().Error; err != nil {
 		log.Println("Error committing transaction:", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit transaction: " + err.Error()})
+		errors.HandleHttpError(c, errors.NewBadRequestError("Failed to commit transaction: "+err.Error()))
 		return
 	}
 
 	// Send a success response.
-	c.JSON(http.StatusOK, gin.H{"message": "Data saved successfully"})
+	c.JSON(http.StatusOK, types.OKResponse{
+		Message: "Data saved successfully",
+	})
+}
+
+//	@BasePath	/api/v1
+//
+// GetSolanaController godoc
+// @Summary      Get Solana portfolio for a wallet
+// @Description  Retrieve Solana portfolio details, including tokens and NFTs, for a specific wallet.
+// @Tags         solana
+// @Accept       json
+// @Produce      json
+// @Param        wallet_id path int true "Wallet ID" Format(int)
+// @Param        offset query int false "Pagination offset" Format(int)
+// @Param        limit query int false "Pagination limit" Format(int)
+// @Success      200 {object} models.GlobalWallet
+// @Failure      400 {object} errors.APIError
+// @Failure      404 {object} errors.APIError
+// @Failure      500 {object} errors.APIError
+// @Router       /portfolio/solana-wallet/{wallet_id} [get]
+func GetSolanaController(c *gin.Context, db *gorm.DB) {
+	wallet := models.GlobalWallet{}
+	walletID, err := strconv.Atoi(c.Param("wallet-id"))
+
+	if err != nil {
+		errors.HandleHttpError(c, errors.NewBadRequestError("invalid wallet id"))
+		return
+	}
+
+	// Parse optional query parameters
+	page, err := strconv.Atoi(c.DefaultQuery("offset", "1"))
+	if err != nil {
+		errors.HandleHttpError(c, errors.NewBadRequestError("invalid offset"))
+		return
+	}
+
+	limit, err := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	if err != nil {
+		errors.HandleHttpError(c, errors.NewBadRequestError("invalid limit"))
+		return
+	}
+
+	/**
+	explain preload query
+
+	SELECT *
+	FROM global_wallets
+	LEFT JOIN solana_assets_moralis_v1 ON global_wallets.wallet_id = solana_assets_moralis_v1.wallet_id
+	LEFT JOIN tokens ON solana_assets_moralis_v1.solana_asset_id = tokens.solana_asset_id
+	LEFT JOIN nfts ON solana_assets_moralis_v1.solana_asset_id = nfts.solana_asset_id
+	WHERE global_wallets.wallet_id = ?
+	LIMIT limit;
+	*/
+
+	// Define a reusable function to apply offset and limit for preload
+	prlimit := func(query *gorm.DB) *gorm.DB {
+		return query.Offset((page - 1) * limit).Limit(limit)
+	}
+
+	err = db.
+		Preload("SolanaAssetsMoralisV1.Tokens", prlimit).
+		Preload("SolanaAssetsMoralisV1.NFTS", prlimit).
+		Preload("SolanaAssetsMoralisV1").
+		Where("wallet_id = ?", walletID).
+		First(&wallet).Error
+
+	if err != nil {
+		errors.HandleHttpError(c, errors.NewNotFoundError("wallet not found"))
+		return
+	}
+
+	c.JSON(http.StatusOK, wallet)
 }
