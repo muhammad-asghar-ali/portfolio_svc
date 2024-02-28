@@ -7,64 +7,70 @@ import (
 )
 
 // BitcoinBtcComV1 represents the bitcoin_btc_com_v1 table.
-type BitcoinBtcComV1 struct {
-	BtcAssetID  uint      `gorm:"primaryKey;autoIncrement"` // Primary key
-	WalletID    uint      `gorm:"not null"`                 // Foreign key to global_wallets
-	BtcUsdPrice float64   `gorm:"type:float"`
-	UpdatedAt   time.Time `gorm:""`
-	CreatedAt   time.Time `gorm:""`
-}
+type (
+	BitcoinBtcComV1 struct {
+		BtcAssetID  uint      `gorm:"primaryKey;autoIncrement" json:"btc_asset_id"` // Primary key
+		WalletID    uint      `gorm:"not null;unique" json:"wallet_id"`             // Foreign key to global_wallets
+		BtcUsdPrice float64   `gorm:"type:float" json:"btc_usd_price"`
+		UpdatedAt   time.Time `gorm:"" json:"updated_at"`
+		CreatedAt   time.Time `gorm:"" json:"created_at"`
 
-// BitcoinAddressInfo represents the bitcoin_address_info table.
-type BitcoinAddressInfo struct {
-	AddressID           uint      `gorm:"primaryKey;autoIncrement"`
-	BtcAssetID          uint      `gorm:"not null"`
-	Received            float64   `gorm:"type:float"`
-	Sent                float64   `gorm:"type:float"`
-	Balance             float64   `gorm:"type:float"`
-	TxCount             int       `gorm:"type:int"`
-	UnconfirmedTxCount  int       `gorm:"type:int"`
-	UnconfirmedReceived float64   `gorm:"type:float"`
-	UnconfirmedSent     float64   `gorm:"type:float"`
-	UnspentTxCount      int       `gorm:"type:int"`
-	FirstTx             string    `gorm:"type:text"`
-	LastTx              string    `gorm:"type:text"`
-	UpdatedAt           time.Time `gorm:""`
-	CreatedAt           time.Time `gorm:""`
-}
+		BitcoinAddressInfo *BitcoinAddressInfo `gorm:"foreignKey:BtcAssetID" json:"bitcoin_address_info,omitempty"`
+	}
+
+	// BitcoinAddressInfo represents the bitcoin_address_info table.
+	BitcoinAddressInfo struct {
+		AddressID           uint      `gorm:"primaryKey;autoIncrement" json:"address_id"`
+		BtcAssetID          uint      `gorm:"not null" json:"btc_asset_id"`
+		Received            float64   `gorm:"type:float" json:"received"`
+		Sent                float64   `gorm:"type:float" json:"sent"`
+		Balance             float64   `gorm:"type:float" json:"balance"`
+		TxCount             int       `gorm:"type:int" json:"tx_count"`
+		UnconfirmedTxCount  int       `gorm:"type:int" json:"unconfirmed_tx_count"`
+		UnconfirmedReceived float64   `gorm:"type:float" json:"unconfirmed_received"`
+		UnconfirmedSent     float64   `gorm:"type:float" json:"unconfirmed_sent"`
+		UnspentTxCount      int       `gorm:"type:int" json:"unspent_tx_count"`
+		FirstTx             string    `gorm:"type:text" json:"first_tx"`
+		LastTx              string    `gorm:"type:text" json:"last_tx"`
+		UpdatedAt           time.Time `gorm:"" json:"updated_at"`
+		CreatedAt           time.Time `gorm:"" json:"created_at"`
+	}
+)
 
 // TableName overrides the table name used by GORM to `bitcoin_address_info`
 func (BitcoinAddressInfo) TableName() string {
 	return "bitcoin_address_info"
 }
 
+func (BitcoinBtcComV1) TableName() string {
+	return "bitcoin_btc_com_v1"
+}
+
 // SaveBitcoinData saves a BitcoinBtcComV1 record and a BitcoinAddressInfo record.
-// btcComV1 is optional and can be nil.
 func SaveBitcoinData(tx *gorm.DB, btcAddressInfo *BitcoinAddressInfo, btcComV1 *BitcoinBtcComV1) error {
 	// First, handle the BitcoinBtcComV1 record
-	if btcComV1 != nil {
-		var existingBtcComV1 BitcoinBtcComV1
-		// Check if a BitcoinBtcComV1 record already exists for the wallet.
-		result := tx.Where("wallet_id = ?", btcComV1.WalletID).First(&existingBtcComV1)
+	existingBtcComV1 := BitcoinBtcComV1{}
+	result := tx.Where("wallet_id = ?", btcComV1.WalletID).First(&existingBtcComV1)
 
-		if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
-			// Return any other error encountered during the query.
-			return result.Error
-		}
+	if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
+		// Return any other error encountered during the query.
+		return result.Error
+	}
 
-		if result.RowsAffected == 0 {
-			// If the record does not exist, create a new one.
-			if result := tx.Create(btcComV1); result.Error != nil {
-				return result.Error
-			}
-		} else {
-			// If the record exists, update it with the new information.
-			if err := tx.Model(&existingBtcComV1).Updates(btcComV1).Error; err != nil {
-				return err
-			}
-			// Use the ID of the existing record for the BitcoinAddressInfo.
-			btcComV1.BtcAssetID = existingBtcComV1.BtcAssetID
+	// If the record does not exist, create a new one.
+	if result.RowsAffected == 0 {
+		if err := tx.Create(btcComV1).Error; err != nil {
+			tx.Rollback()
+			return err
 		}
+	} else {
+		// If the record exists, update it with the new information.
+		if err := tx.Model(&existingBtcComV1).Updates(btcComV1).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+		// Use the ID of the existing record for the BitcoinAddressInfo.
+		btcComV1.BtcAssetID = existingBtcComV1.BtcAssetID
 	}
 
 	// Then, handle the BitcoinAddressInfo record
@@ -74,8 +80,27 @@ func SaveBitcoinData(tx *gorm.DB, btcAddressInfo *BitcoinAddressInfo, btcComV1 *
 			btcAddressInfo.BtcAssetID = btcComV1.BtcAssetID
 		}
 
-		if result := tx.Create(btcAddressInfo); result.Error != nil {
+		// Check if a BitcoinAddressInfo record already exists for the wallet.
+		existingBTCAddressInfo := BitcoinAddressInfo{}
+		result := tx.Where("btc_asset_id = ?", btcAddressInfo.BtcAssetID).First(&existingBTCAddressInfo)
+
+		if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
+			// Return any other error encountered during the query.
 			return result.Error
+		}
+
+		// If the record does not exist, create a new one.
+		if result.RowsAffected == 0 {
+			if err := tx.Create(btcAddressInfo).Error; err != nil {
+				tx.Rollback()
+				return err
+			}
+		} else {
+			// If the record exists, update it with the new information.
+			if err := tx.Model(&existingBTCAddressInfo).Updates(btcAddressInfo).Error; err != nil {
+				tx.Rollback()
+				return err
+			}
 		}
 	}
 
