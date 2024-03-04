@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS chain_details (
-    chain_id VARCHAR(255) PRIMARY KEY,
-    community_id VARCHAR(255),
+    chain_id SERIAL PRIMARY KEY,
+    id VARCHAR(255),
+    community_id INTEGER,
     name VARCHAR(255),
     logo_url VARCHAR(255),
     native_token_id VARCHAR(255),
@@ -9,5 +10,5 @@ CREATE TABLE IF NOT EXISTS chain_details (
     wallet_id INTEGER NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (wallet_id) REFERENCES global_wallets(wallet_id)
+    FOREIGN KEY (wallet_id) REFERENCES global_wallets(wallet_id) ON DELETE CASCADE
 );
