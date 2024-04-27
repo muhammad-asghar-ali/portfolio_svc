@@ -18,8 +18,9 @@ type (
 		LastUpdatedAt    time.Time `gorm:"default:CURRENT_TIMESTAMP"  json:"last_updated_at"`
 
 		// relations use in json responses (optional)
-		Tokens *[]Token `gorm:"foreignKey:SolanaAssetID" json:"tokens,omitempty"`
-		NFTS   *[]NFT   `gorm:"foreignKey:SolanaAssetID" json:"nfts,omitempty"`
+		Tokens             *[]Token            `gorm:"foreignKey:SolanaAssetID" json:"tokens,omitempty"`
+		NFTS               *[]NFT              `gorm:"foreignKey:SolanaAssetID" json:"nfts,omitempty"`
+		CoingeckoPriceFeed *CoingeckoPriceFeed `gorm:"-" json:"coingecko_price_feed,omitempty"`
 	}
 
 	// Token represents the tokens table.
@@ -49,7 +50,6 @@ type (
 		Symbol                 string    `gorm:"type:varchar(50)" json:"symbol"`
 		UpdatedAt              time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 		CreatedAt              time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
-		UserScore              int       `json:"userscore"`
 	}
 )
 

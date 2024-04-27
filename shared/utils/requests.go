@@ -7,6 +7,7 @@ import (
 	"net/http"
 )
 
+// CallAPI sends a GET request to the specified URL with provided headers and returns the response body.
 func CallAPI(url string, headers map[string]string) ([]byte, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -33,6 +34,7 @@ func CallAPI(url string, headers map[string]string) ([]byte, error) {
 	return body, nil
 }
 
+// DecodeJSONResponse decodes a JSON response body into the provided interface.
 func DecodeJSONResponse(body []byte, v interface{}) error {
 	decoder := json.NewDecoder(bytes.NewReader(body))
 	if err := decoder.Decode(&v); err != nil {

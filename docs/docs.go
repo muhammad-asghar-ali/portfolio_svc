@@ -24,6 +24,55 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/v1/all-portfolio": {
+            "post": {
+                "description": "Retrieves information for all portfolios including Bitcoin, Solana, and EVM addresses.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "portfolio"
+                ],
+                "summary": "Fetch all portfolio information",
+                "parameters": [
+                    {
+                        "description": "Portfolio Addresses",
+                        "name": "addresses",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.PortfolioAddresses"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/responses.PortfolioResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.APIError"
+                        }
+                    }
+                }
+            }
+        },
         "/db/test/healthy": {
             "get": {
                 "description": "do ping",
@@ -65,6 +114,60 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/portfolio/btc": {
+            "get": {
+                "description": "Retrieves information for a given Bitcoin address using the BTC.com API.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "bitcoin"
+                ],
+                "summary": "Fetch Bitcoin Wallet Information",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "format": "string",
+                        "description": "Bitcoin Addresses",
+                        "name": "addresses",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/responses.PortfolioResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.APIError"
                         }
                     }
                 }
@@ -135,9 +238,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/portfolio/btc/{btc-address}": {
+        "/portfolio/debank": {
             "get": {
-                "description": "Retrieves information for a given Bitcoin address using the BTC.com API.",
+                "description": "Retrieves information for a given Debank address using the BTC.com API.",
                 "consumes": [
                     "application/json"
                 ],
@@ -145,15 +248,16 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "bitcoin"
+                    "debank"
                 ],
-                "summary": "Fetch Bitcoin Wallet Information",
+                "summary": "Fetch Debank Wallet Information",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Bitcoin Address",
-                        "name": "btc-address",
-                        "in": "path",
+                        "type": "array",
+                        "format": "string",
+                        "description": "Debank Address",
+                        "name": "addresses",
+                        "in": "query",
                         "required": true
                     }
                 ],
@@ -161,7 +265,10 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.GlobalWallet"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/responses.PortfolioResponse"
+                            }
                         }
                     },
                     "400": {
@@ -185,9 +292,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/portfolio/debank/{debank-address}": {
+        "/portfolio/solana": {
             "get": {
-                "description": "Retrieves information for a given Debank address using the BTC.com API.",
+                "description": "Fetch Solana portfolio details, including tokens and NFTs, for a specific Solana address.",
                 "consumes": [
                     "application/json"
                 ],
@@ -195,24 +302,16 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Debank"
+                    "solana"
                 ],
-                "summary": "Fetch Debank Wallet Information",
+                "summary": "Fetch Solana portfolio details for a given Solana address",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "array",
                         "format": "string",
-                        "description": "Debank Address",
-                        "name": "debank-address",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "format": "string",
-                        "description": "Debank access key",
-                        "name": "AccessKey",
-                        "in": "header",
+                        "description": "Solana Addresses",
+                        "name": "addresses",
+                        "in": "query",
                         "required": true
                     }
                 ],
@@ -220,7 +319,10 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.GlobalWallet"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/responses.PortfolioResponse"
+                            }
                         }
                     },
                     "400": {
@@ -308,68 +410,32 @@ const docTemplate = `{
                     }
                 }
             }
-        },
-        "/portfolio/solana/{sol-address}": {
-            "get": {
-                "description": "Fetch Solana portfolio details, including tokens and NFTs, for a specific Solana address.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "solana"
-                ],
-                "summary": "Fetch Solana portfolio details for a given Solana address",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "format": "string",
-                        "description": "Solana Address",
-                        "name": "sol-address",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "format": "string",
-                        "description": "Moralis API Key",
-                        "name": "x-api-key",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.GlobalWallet"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/errors.APIError"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/errors.APIError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/errors.APIError"
-                        }
-                    }
-                }
-            }
         }
     },
     "definitions": {
+        "controllers.PortfolioAddresses": {
+            "type": "object",
+            "properties": {
+                "btc": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "evm": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "sol": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "errors.APIError": {
             "type": "object",
             "properties": {
@@ -441,6 +507,9 @@ const docTemplate = `{
                 "btc_usd_price": {
                     "type": "number"
                 },
+                "coingecko_price_feed": {
+                    "$ref": "#/definitions/models.CoingeckoPriceFeed"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -487,6 +556,30 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "wrapped_token_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.CoingeckoPriceFeed": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "id": {
+                    "description": "database id",
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -606,9 +699,6 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
-                },
-                "userscore": {
-                    "type": "integer"
                 }
             }
         },
@@ -617,9 +707,6 @@ const docTemplate = `{
             "properties": {
                 "amount": {
                     "type": "integer"
-                },
-                "attributes": {
-                    "type": "array"
                 },
                 "chain": {
                     "type": "string"
@@ -668,9 +755,6 @@ const docTemplate = `{
                     "description": "database id",
                     "type": "integer"
                 },
-                "pay_token": {
-                    "type": "object"
-                },
                 "thumbnail_url": {
                     "type": "string"
                 },
@@ -678,6 +762,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "updated_at": {
+                    "description": "Attributes   json.RawMessage ` + "`" + `gorm:\"type:jsonb\" json:\"attributes\"` + "`" + `\nPayToken     json.RawMessage ` + "`" + `gorm:\"type:jsonb\" json:\"pay_token\"` + "`" + `",
                     "type": "string"
                 },
                 "usd_price": {
@@ -688,6 +773,9 @@ const docTemplate = `{
         "models.SolanaAssetsMoralisV1": {
             "type": "object",
             "properties": {
+                "coingecko_price_feed": {
+                    "$ref": "#/definitions/models.CoingeckoPriceFeed"
+                },
                 "lamports": {
                     "type": "string"
                 },
@@ -832,6 +920,64 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "responses.ChainsResponse": {
+            "type": "object",
+            "properties": {
+                "asset_id": {
+                    "type": "string"
+                },
+                "asset_percentage": {
+                    "type": "number"
+                },
+                "asset_symbol": {
+                    "type": "string"
+                },
+                "chain": {
+                    "type": "string"
+                },
+                "is_verified": {
+                    "type": "boolean"
+                },
+                "quantity": {
+                    "type": "number"
+                },
+                "total_price": {
+                    "type": "number"
+                },
+                "unit_price": {
+                    "type": "number"
+                },
+                "wallet_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "responses.PortfolioResponse": {
+            "type": "object",
+            "properties": {
+                "asset_symbol": {
+                    "type": "string"
+                },
+                "chains_info": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/responses.ChainsResponse"
+                    }
+                },
+                "portfolio_percentage": {
+                    "type": "number"
+                },
+                "quantity": {
+                    "type": "number"
+                },
+                "total_price": {
+                    "type": "number"
+                },
+                "unit_price": {
+                    "type": "number"
                 }
             }
         }

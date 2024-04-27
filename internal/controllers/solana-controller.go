@@ -1,16 +1,17 @@
 package controllers
 
 import (
-	"encoding/json"
-	"io"
-	"log"
 	"net/http"
 	"strconv"
-	"time"
+	"strings"
+	"sync"
 
 	"github.com/0xbase-Corp/portfolio_svc/internal/models"
-	"github.com/0xbase-Corp/portfolio_svc/internal/types"
+	"github.com/0xbase-Corp/portfolio_svc/internal/responses"
+	"github.com/0xbase-Corp/portfolio_svc/providers"
+	"github.com/0xbase-Corp/portfolio_svc/providers/solana"
 	"github.com/0xbase-Corp/portfolio_svc/shared/errors"
+	"github.com/0xbase-Corp/portfolio_svc/shared/utils"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -23,111 +24,51 @@ import (
 // @Tags         solana
 // @Accept       json
 // @Produce      json
-// @Param        sol-address path string true "Solana Address" Format(string)
-// @Param        x-api-key header string true "Moralis API Key" Format(string)
-// @Success      200 {object} models.GlobalWallet
+// @Param        addresses  query      array  true  "Solana Addresses" Format(string)
+// @Success      200 {object} []responses.PortfolioResponse
 // @Failure      400 {object} errors.APIError
 // @Failure      404 {object} errors.APIError
 // @Failure      500 {object} errors.APIError
-// @Router       /portfolio/solana/{sol-address} [get]
-func SolanaController(c *gin.Context, db *gorm.DB) {
-	// Extract the Solana address from the request parameter.
-	solAddress := c.Param("sol-address")
+// @Router       /portfolio/solana [get]
+func SolanaController(c *gin.Context, db *gorm.DB, apiClient providers.APIClient) {
+	addresses := c.Query("addresses")
+	solanaAddresses := strings.Split(addresses, ",")
 
-	// Extract the Moralis API key from the request header.
-	moralisAccessKey := c.GetHeader("x-api-key")
+	solanaAddresses = utils.UniqueAddress(solanaAddresses)
 
-	// Prepare the Moralis API request URL.
-	url := "https://solana-gateway.moralis.io/account/mainnet/" + solAddress + "/portfolio"
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		errors.HandleHttpError(c, errors.NewBadRequestError(err.Error()))
+	if len(solanaAddresses) == 0 {
+		errors.HandleHttpError(c, errors.NewBadRequestError("empty btc addresses"))
 		return
 	}
 
-	// Add the Moralis API key to the request header.
-	req.Header.Add("x-api-key", moralisAccessKey)
+	wg := &sync.WaitGroup{}
+	mutex := &sync.Mutex{}
+	ch := make(chan *models.GlobalWallet, 1) // 1 specifies the buffer size of the channel
+	errorCh := make(chan error, len(solanaAddresses))
 
-	// Create an HTTP client and execute the request.
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		errors.HandleHttpError(c, errors.NewBadRequestError(err.Error()))
-		return
-	}
-	defer resp.Body.Close()
+	for _, solAddress := range solanaAddresses {
+		wg.Add(1)
 
-	// Read the response body.
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		errors.HandleHttpError(c, errors.NewBadRequestError(err.Error()))
-		return
+		go fetchAndSaveSolana(db, apiClient, solAddress, ch, wg, mutex, errorCh)
 	}
 
-	// Define a struct to match the JSON response structure from the Moralis API.
-	response := types.SolanaApiResponse{}
+	// Use a goroutine to close the channel after all goroutines have finished
+	go func() {
+		wg.Wait()
+		close(errorCh)
+		close(ch)
+	}()
 
-	// Parse the JSON response into the defined struct.
-	if err := json.Unmarshal(body, &response); err != nil {
-		log.Println("Error parsing JSON response:", err)
-		errors.HandleHttpError(c, errors.NewBadRequestError("Failed to parse JSON response: "+err.Error()))
+	errs := errors.HandleChannelErrors(errorCh, c)
+	if len(errs) > 0 {
+		errors.HandleHttpError(c, errors.NewBadRequestError(strings.Join(errs, "; ")))
 		return
 	}
 
-	// Check if a wallet with the given Solana address exists in the database.
-	wallet := models.GlobalWallet{}
-	err = db.Where("wallet_address = ?", solAddress).First(&wallet).Error
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			// If the wallet doesn't exist, create a new one.
-			wallet = models.GlobalWallet{
-				WalletAddress:  solAddress,
-				BlockchainType: "Solana",
-			}
-			if err := db.Create(&wallet).Error; err != nil {
-				errors.HandleHttpError(c, errors.NewBadRequestError("Failed to create wallet: "+err.Error()))
-				return
-			}
-		} else {
-			errors.HandleHttpError(c, errors.NewBadRequestError("Database query error: "+err.Error()))
-			return
-		}
-	}
+	// Collect all results from the channel and process to genernic response for solana
+	responses := processSolanaResponses(ch)
 
-	// Prepare the SolanaAssetsMoralisV1 object with the response data.
-	solanaAsset := models.SolanaAssetsMoralisV1{
-		WalletID:         wallet.WalletID, // Assuming WalletID is the correct field name
-		Lamports:         response.NativeBalance.Lamports,
-		Solana:           response.NativeBalance.Solana,
-		TotalTokensCount: len(response.Tokens),
-		TotalNftsCount:   len(response.NFTs),
-		LastUpdatedAt:    time.Now(),
-	}
-
-	// Start a new database transaction.
-	tx := db.Begin()
-
-	// Attempt to save the Solana asset data along with the associated tokens and NFTs.
-	if err := models.SaveSolanaData(tx, &solanaAsset, response.Tokens, response.NFTs); err != nil {
-		tx.Rollback()
-		errors.HandleHttpError(c, errors.NewBadRequestError("Failed to save data to the database: "+err.Error()))
-		return
-	}
-
-	// Commit the transaction if everything is successful.
-	if err := tx.Commit().Error; err != nil {
-		errors.HandleHttpError(c, errors.NewBadRequestError("Failed to commit transaction: "+err.Error()))
-		return
-	}
-
-	walletResponse, err := models.GetGlobalWalletWithSolanaInfo(db, solAddress)
-	if err != nil {
-		errors.HandleHttpError(c, errors.NewBadRequestError("Failed to get wallet data: "+err.Error()))
-		return
-	}
-
-	// Send a success response.
-	c.JSON(http.StatusOK, walletResponse)
+	c.JSON(http.StatusOK, responses)
 }
 
 //	@BasePath	/api/v1
@@ -198,4 +139,105 @@ func GetSolanaController(c *gin.Context, db *gorm.DB) {
 	}
 
 	c.JSON(http.StatusOK, wallet)
+}
+
+// helper to save data
+// TODO: write a common interface in provider which saves the data in database
+func saveSolana(db *gorm.DB, solanaAddress string, apiResponse solana.SolanaApiResponse) (*models.GlobalWallet, error) {
+	// Begin a new transaction
+	tx := db.Begin()
+
+	wallet, err := models.GetOrCreateWallet(tx, solanaAddress, utils.Solana)
+	if err != nil {
+		tx.Rollback()
+		return &models.GlobalWallet{}, err
+	}
+
+	// Assuming wallet is the GlobalWallet record found or created
+	walletID := wallet.WalletID
+
+	// Initialize solanaAsset and set the WalletID
+	solanaAsset := models.SolanaAssetsMoralisV1{}
+	solanaAsset.WalletID = walletID
+
+	// Attempt to save the Solana asset data along with the associated tokens and NFTs.
+	if err := models.SaveSolanaData(tx, &solanaAsset, apiResponse.Tokens, apiResponse.NFTs); err != nil {
+		tx.Rollback()
+		return &models.GlobalWallet{}, err
+	}
+
+	// save the solana price feed
+	// for now hard code the USD -> TODO: change
+	if err := HandleCoingeckoPrice(tx, utils.Solana, "usd"); err != nil {
+		tx.Rollback()
+		return &models.GlobalWallet{}, err
+	}
+
+	// Commit the transaction
+	if err := tx.Commit().Error; err != nil {
+		return &models.GlobalWallet{}, err
+	}
+
+	// get the data
+	walletResponse, err := models.GetGlobalWalletWithSolanaInfo(db, solanaAddress)
+	if err != nil {
+		return &models.GlobalWallet{}, err
+	}
+
+	return walletResponse, nil
+}
+
+// Fetch and save the data for one address
+// TODO: write a common interface in provider which saves the data in database
+func fetchAndSaveSolana(db *gorm.DB, apiClient providers.APIClient, address string, ch chan<- *models.GlobalWallet, wg *sync.WaitGroup, mutex *sync.Mutex, errorCh chan<- error) {
+	defer wg.Done()
+
+	body, err := apiClient.FetchData(address)
+	if err != nil {
+		errorCh <- err
+		return
+	}
+
+	// ignore the Address which returns error or empty response
+	resp := solana.SolanaApiResponse{}
+	if err := utils.DecodeJSONResponse(body, &resp); err != nil {
+		errorCh <- err
+		return
+	}
+
+	// Save data to the database
+	walletResponse, err := saveSolana(db, address, resp)
+	if err != nil {
+		errorCh <- err
+		return
+	}
+
+	// Use a mutex to safely append to the channel.
+	mutex.Lock()
+	ch <- walletResponse
+	mutex.Unlock()
+}
+
+// processSolanaResponses processes wallet responses and returns a slice of solana responses.
+func processSolanaResponses(ch <-chan *models.GlobalWallet) []*responses.PortfolioResponse {
+	solanaResponses := make([]*responses.ChainsResponse, 0)
+	for walletResponse := range ch {
+		if walletResponse == nil || walletResponse.SolanaAssetsMoralisV1 == nil {
+			continue
+		}
+
+		for _, token := range *walletResponse.SolanaAssetsMoralisV1.Tokens {
+			solResponse := &responses.ChainsResponse{}
+			solResponse.SolanaTokenResponse(walletResponse, &token)
+			solanaResponses = append(solanaResponses, solResponse)
+		}
+	}
+
+	solanaResponses = responses.AssetTotalsOnChainsAndCalculatePercentages(solanaResponses)
+
+	resp := responses.GroupByAssetSymbolToList(solanaResponses)
+
+	resp = responses.CalculatePortfolioResponse(resp)
+
+	return resp
 }

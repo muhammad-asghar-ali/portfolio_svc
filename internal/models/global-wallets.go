@@ -3,6 +3,7 @@ package models
 import (
 	"time"
 
+	"github.com/0xbase-Corp/portfolio_svc/shared/utils"
 	"gorm.io/gorm"
 )
 
@@ -29,8 +30,9 @@ func (GlobalWallet) TableName() string {
 
 // Get the btc data along with it relations based on btcAddress
 func GetGlobalWalletWithBitcoinInfo(tx *gorm.DB, btcAddress string) (*GlobalWallet, error) {
-	wallet := GlobalWallet{}
+	wallet := &GlobalWallet{}
 
+	// Retrieve the wallet information including Bitcoin data
 	err := tx.Where("wallet_address = ?", btcAddress).
 		Preload("BitcoinBtcComV1").
 		Preload("BitcoinBtcComV1.BitcoinAddressInfo").
@@ -40,12 +42,21 @@ func GetGlobalWalletWithBitcoinInfo(tx *gorm.DB, btcAddress string) (*GlobalWall
 		return nil, err
 	}
 
-	return &wallet, nil
+	// Fetch the CoingeckoPriceFeed based on the blockchain type
+	coingeckoPriceFeed, err := GetCoingeckoPriceFeedByName(tx, wallet.BlockchainType)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set the CoingeckoPriceFeed to the wallet
+	wallet.BitcoinBtcComV1.CoingeckoPriceFeed = coingeckoPriceFeed
+
+	return wallet, nil
 }
 
 // Get the solana data along with it relations based on solAddress
 func GetGlobalWalletWithSolanaInfo(tx *gorm.DB, solAddress string) (*GlobalWallet, error) {
-	wallet := GlobalWallet{}
+	wallet := &GlobalWallet{}
 
 	err := tx.Where("wallet_address = ?", solAddress).
 		Preload("SolanaAssetsMoralisV1.Tokens").
@@ -57,12 +68,21 @@ func GetGlobalWalletWithSolanaInfo(tx *gorm.DB, solAddress string) (*GlobalWalle
 		return nil, err
 	}
 
-	return &wallet, nil
+	// Fetch the CoingeckoPriceFeed based on the blockchain type
+	coingeckoPriceFeed, err := GetCoingeckoPriceFeedByName(tx, wallet.BlockchainType)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set the CoingeckoPriceFeed to the wallet
+	wallet.SolanaAssetsMoralisV1.CoingeckoPriceFeed = coingeckoPriceFeed
+
+	return wallet, nil
 }
 
 // Get the debank data along with it relations based on debankAddress
 func GetGlobalWalletWithEvmDebankInfo(tx *gorm.DB, debankAddress string) (*GlobalWallet, error) {
-	wallet := GlobalWallet{}
+	wallet := &GlobalWallet{}
 
 	err := tx.Where("wallet_address = ?", debankAddress).
 		Preload("ChainDetails").
@@ -75,37 +95,55 @@ func GetGlobalWalletWithEvmDebankInfo(tx *gorm.DB, debankAddress string) (*Globa
 		return nil, err
 	}
 
-	return &wallet, nil
+	return wallet, nil
 }
 
-func GetWallet(tx *gorm.DB, walletAddress string) (GlobalWallet, error) {
-	var wallet GlobalWallet
+func GetWallet(tx *gorm.DB, walletAddress string) (*GlobalWallet, error) {
+	wallet := &GlobalWallet{}
 
 	err := tx.Where("wallet_address = ?", walletAddress).First(&wallet).Error
 	if err != nil {
-		return wallet, err
+		return nil, err
 	}
 
 	return wallet, nil
 }
 
-func CreateWallet(tx *gorm.DB, walletAddress, blockchainType string) (GlobalWallet, error) {
-	wallet := GlobalWallet{
+func UpdateWalletLastUpdateAt(tx *gorm.DB, wallet *GlobalWallet) (*GlobalWallet, error) {
+	now, err := utils.GetDBTime()
+	if err != nil {
+		return nil, err
+	}
+
+	wallet.LastUpdatedAt = now.UTC()
+
+	if err := tx.Save(wallet).Error; err != nil {
+		return nil, err
+	}
+
+	return wallet, nil
+}
+
+func CreateWallet(tx *gorm.DB, walletAddress, blockchainType string) (*GlobalWallet, error) {
+	wallet := &GlobalWallet{
 		WalletAddress:  walletAddress,
 		BlockchainType: blockchainType,
 	}
 
 	if err := tx.Create(&wallet).Error; err != nil {
-		return wallet, err
+		return nil, err
 	}
 
 	return wallet, nil
 }
 
-func GetOrCreateWallet(tx *gorm.DB, walletAddress, blockchainType string) (GlobalWallet, error) {
+func GetOrCreateWallet(tx *gorm.DB, walletAddress, blockchainType string) (*GlobalWallet, error) {
 	wallet, err := GetWallet(tx, walletAddress)
 	if err == gorm.ErrRecordNotFound {
 		wallet, err = CreateWallet(tx, walletAddress, blockchainType)
+	} else {
+		wallet, err = UpdateWalletLastUpdateAt(tx, wallet)
 	}
+
 	return wallet, err
 }
