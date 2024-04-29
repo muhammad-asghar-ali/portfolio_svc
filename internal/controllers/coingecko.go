@@ -1,10 +1,11 @@
 package controllers
 
 import (
+	"gorm.io/gorm"
+
 	"github.com/0xbase-Corp/portfolio_svc/internal/models"
 	"github.com/0xbase-Corp/portfolio_svc/providers/coingecko"
 	"github.com/0xbase-Corp/portfolio_svc/shared/utils"
-	"gorm.io/gorm"
 )
 
 func HandleCoingeckoPrice(tx *gorm.DB, cryptoID, currency string) error {

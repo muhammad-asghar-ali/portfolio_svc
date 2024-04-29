@@ -19,8 +19,6 @@ var PortfolioRoutes = func(router *gin.Engine, db *gorm.DB) {
 
 	v1 := router.Group("/api/v1")
 
-	v1.GET("/test", func(c *gin.Context) { controllers.TestController(c, db) })
-
 	v1.GET("/portfolio/solana", func(c *gin.Context) { controllers.SolanaController(c, db, solanaAPIClient) })
 
 	v1.GET("/portfolio/solana-wallet/:wallet-id", func(c *gin.Context) { controllers.GetSolanaController(c, db) })

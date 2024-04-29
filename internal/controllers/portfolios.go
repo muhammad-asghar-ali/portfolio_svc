@@ -5,6 +5,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+
 	"github.com/0xbase-Corp/portfolio_svc/internal/models"
 	"github.com/0xbase-Corp/portfolio_svc/internal/responses"
 	"github.com/0xbase-Corp/portfolio_svc/providers/bitcoin"
@@ -12,8 +15,6 @@ import (
 	"github.com/0xbase-Corp/portfolio_svc/providers/solana"
 	"github.com/0xbase-Corp/portfolio_svc/shared/errors"
 	"github.com/0xbase-Corp/portfolio_svc/shared/utils"
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 type (
