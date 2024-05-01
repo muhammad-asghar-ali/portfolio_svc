@@ -44,7 +44,7 @@ func DebankController(c *gin.Context, db *gorm.DB, apiClient providers.APIClient
 
 	wg := &sync.WaitGroup{}
 	mutex := &sync.Mutex{}
-	ch := make(chan *models.GlobalWallet, 1) // 1 specifies the buffer size of the channel
+	ch := make(chan *models.GlobalWallet, len(debankAddresses)) // len(debankAddresses) specifies the buffer size of the channel
 	errorCh := make(chan error, len(debankAddresses))
 
 	for _, btcAddress := range debankAddresses {

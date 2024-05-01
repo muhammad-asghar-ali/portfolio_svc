@@ -44,7 +44,7 @@ func SolanaController(c *gin.Context, db *gorm.DB, apiClient providers.APIClient
 
 	wg := &sync.WaitGroup{}
 	mutex := &sync.Mutex{}
-	ch := make(chan *models.GlobalWallet, 1) // 1 specifies the buffer size of the channel
+	ch := make(chan *models.GlobalWallet, len(solanaAddresses)) // len(solanaAddresses) specifies the buffer size of the channel
 	errorCh := make(chan error, len(solanaAddresses))
 
 	for _, solAddress := range solanaAddresses {
