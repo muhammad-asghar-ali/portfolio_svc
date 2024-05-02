@@ -1,5 +1,19 @@
 basePath: /api/v1
 definitions:
+  controllers.GenerateHashRequest:
+    properties:
+      public_key:
+        type: string
+    required:
+    - public_key
+    type: object
+  controllers.GenerateHashResonse:
+    properties:
+      hashed_public_key:
+        type: string
+      type:
+        type: string
+    type: object
   controllers.PortfolioAddresses:
     properties:
       btc:
@@ -14,6 +28,23 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  controllers.TokenResponse:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  controllers.VerifyRequest:
+    properties:
+      hashed_public_key:
+        type: string
+      public_key:
+        type: string
+    required:
+    - hashed_public_key
+    - public_key
     type: object
   errors.APIError:
     properties:
@@ -425,36 +456,40 @@ paths:
       summary: Fetch all portfolio information
       tags:
       - portfolio
-  /db/test/healthy:
-    get:
+  /generate-hash:
+    post:
       consumes:
       - application/json
-      description: do ping
+      description: Generate the hash for authorization
+      parameters:
+      - description: GenerateHashRequest object
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.GenerateHashRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            type: string
-      summary: ping example
-      tags:
-      - example
-  /example/helloworld:
-    get:
-      consumes:
-      - application/json
-      description: do ping
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
+            $ref: '#/definitions/controllers.GenerateHashResonse'
+        "400":
+          description: Bad Request
           schema:
-            type: string
-      summary: ping example
+            $ref: '#/definitions/errors.APIError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.APIError'
+      summary: Generate the hash for authorization
       tags:
-      - example
+      - auth
   /portfolio/btc:
     get:
       consumes:
@@ -656,4 +691,38 @@ paths:
       summary: Get Solana portfolio for a wallet
       tags:
       - solana
+  /verify-hash:
+    post:
+      consumes:
+      - application/json
+      description: Verify the hash for authorization
+      parameters:
+      - description: VerifyRequest object
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.VerifyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.TokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.APIError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.APIError'
+      summary: Verify the hash for authorization
+      tags:
+      - auth
 swagger: "2.0"

@@ -73,9 +73,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/db/test/healthy": {
-            "get": {
-                "description": "do ping",
+        "/generate-hash": {
+            "post": {
+                "description": "Generate the hash for authorization",
                 "consumes": [
                     "application/json"
                 ],
@@ -83,37 +83,43 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "example"
+                    "auth"
                 ],
-                "summary": "ping example",
-                "responses": {
-                    "200": {
-                        "description": "OK",
+                "summary": "Generate the hash for authorization",
+                "parameters": [
+                    {
+                        "description": "GenerateHashRequest object",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/controllers.GenerateHashRequest"
                         }
                     }
-                }
-            }
-        },
-        "/example/helloworld": {
-            "get": {
-                "description": "do ping",
-                "consumes": [
-                    "application/json"
                 ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "example"
-                ],
-                "summary": "ping example",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/controllers.GenerateHashResonse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.APIError"
                         }
                     }
                 }
@@ -410,9 +416,83 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/verify-hash": {
+            "post": {
+                "description": "Verify the hash for authorization",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Verify the hash for authorization",
+                "parameters": [
+                    {
+                        "description": "VerifyRequest object",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.VerifyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.TokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.APIError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.APIError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.APIError"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "controllers.GenerateHashRequest": {
+            "type": "object",
+            "required": [
+                "public_key"
+            ],
+            "properties": {
+                "public_key": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.GenerateHashResonse": {
+            "type": "object",
+            "properties": {
+                "hashed_public_key": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "controllers.PortfolioAddresses": {
             "type": "object",
             "properties": {
@@ -433,6 +513,32 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "controllers.TokenResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.VerifyRequest": {
+            "type": "object",
+            "required": [
+                "hashed_public_key",
+                "public_key"
+            ],
+            "properties": {
+                "hashed_public_key": {
+                    "type": "string"
+                },
+                "public_key": {
+                    "type": "string"
                 }
             }
         },

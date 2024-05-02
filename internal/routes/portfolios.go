@@ -31,4 +31,8 @@ var PortfolioRoutes = func(router *gin.Engine, db *gorm.DB) {
 
 	v1.POST("/all-portfolio", func(c *gin.Context) { controllers.AllPortfolioController(c, db) })
 
+	v1.POST("/generate-hash", func(c *gin.Context) { controllers.AuthGenerateHash(c, db) })
+
+	v1.POST("/verify-hash", func(c *gin.Context) { controllers.AuthVerifyHashKey(c, db) })
+
 }
